@@ -1,4 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react'
+import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail, signOut, updateProfile } from 'firebase/auth'
+import { auth, db } from '../../firebase'
+import { userService } from '../services/firebaseService'
 
 const AuthContext = createContext({})
 
@@ -12,142 +15,117 @@ export const useAuth = () => {
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null)
+  const [userProfile, setUserProfile] = useState(null)
   const [loading, setLoading] = useState(true)
-  const [otpData, setOtpData] = useState(null)
 
   useEffect(() => {
-    // Check for existing session on app load
-    const token = localStorage.getItem('authToken')
-    const userData = localStorage.getItem('userData')
-
-    if (token && userData) {
-      try {
-        setUser(JSON.parse(userData))
-      } catch (error) {
-        localStorage.removeItem('authToken')
-        localStorage.removeItem('userData')
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      if (firebaseUser) {
+        setUser(firebaseUser)
+        // Fetch user profile from Firestore
+        const profileResult = await userService.getUserProfile(firebaseUser.uid)
+        if (profileResult.success) {
+          setUserProfile(profileResult.data)
+        }
+      } else {
+        setUser(null)
+        setUserProfile(null)
       }
-    }
-    setLoading(false)
+      setLoading(false)
+    })
+    return () => unsubscribe()
   }, [])
 
-  const login = async (email, password) => {
+  const signup = async ({ firstName, lastName, email, mobile, password }) => {
     try {
-      // Simulate API call - replace with actual API
-      const response = await mockApiCall('/auth/login', { email, password })
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password)
+      const firebaseUser = userCredential.user
 
-      if (response.success) {
-        const { token, user: userData } = response.data
-        localStorage.setItem('authToken', token)
-        localStorage.setItem('userData', JSON.stringify(userData))
-        setUser(userData)
-        return { success: true }
+      // Update Firebase Auth profile
+      await updateProfile(firebaseUser, {
+        displayName: `${firstName} ${lastName}`
+      })
+
+      // Create user profile in Firestore
+      const profileData = {
+        firstName,
+        lastName,
+        email,
+        mobile,
+        displayName: `${firstName} ${lastName}`,
+        emailVerified: false,
+        mobileVerified: false
       }
-      return { success: false, message: response.message }
+
+      await userService.createUserProfile(firebaseUser.uid, profileData)
+
+      return { success: true }
     } catch (error) {
-      return { success: false, message: 'Login failed. Please try again.' }
+      return { success: false, message: error.message }
     }
   }
 
-  const signup = async (userData) => {
+  const login = async (email, password) => {
     try {
-      // Simulate API call - replace with actual API
-      const response = await mockApiCall('/auth/signup', userData)
-
-      if (response.success) {
-        setOtpData({ email: userData.email, userId: response.data.userId })
-        return { success: true }
-      }
-      return { success: false, message: response.message }
+      await signInWithEmailAndPassword(auth, email, password)
+      return { success: true }
     } catch (error) {
-      return { success: false, message: 'Signup failed. Please try again.' }
+      return { success: false, message: error.message }
     }
+  }
+
+  const logout = async () => {
+    await signOut(auth)
+    setUser(null)
+    setUserProfile(null)
+    return { success: true }
   }
 
   const forgotPassword = async (email) => {
     try {
-      // Simulate API call - replace with actual API
-      const response = await mockApiCall('/auth/forgot-password', { email })
-
-      if (response.success) {
-        setOtpData({
-          email,
-          userId: response.data.userId,
-          type: 'password-reset'
-        })
-        return { success: true }
-      }
-      return { success: false, message: response.message }
+      await sendPasswordResetEmail(auth, email)
+      return { success: true }
     } catch (error) {
-      return { success: false, message: 'Failed to send reset code. Please try again.' }
+      return { success: false, message: error.message }
     }
   }
 
-  const resetPassword = async (newPassword) => {
+  const updateUserProfile = async (updates) => {
+    if (!user) return { success: false, message: 'No user logged in' }
+
     try {
-      if (!otpData || otpData.type !== 'password-reset') {
-        return { success: false, message: 'No password reset session found' }
+      // Update Firebase Auth profile if displayName is being updated
+      if (updates.firstName || updates.lastName) {
+        const displayName = `${updates.firstName || userProfile?.firstName} ${updates.lastName || userProfile?.lastName}`
+        await updateProfile(user, { displayName })
       }
 
-      const response = await mockApiCall('/auth/reset-password', {
-        email: otpData.email,
-        userId: otpData.userId,
-        newPassword
-      })
+      // Update Firestore profile
+      const result = await userService.updateUserProfile(user.uid, updates)
 
-      if (response.success) {
-        setOtpData(null)
-        return { success: true }
+      if (result.success) {
+        // Refresh user profile
+        const profileResult = await userService.getUserProfile(user.uid)
+        if (profileResult.success) {
+          setUserProfile(profileResult.data)
+        }
       }
-      return { success: false, message: response.message }
+
+      return result
     } catch (error) {
-      return { success: false, message: 'Password reset failed. Please try again.' }
+      return { success: false, message: error.message }
     }
-  }
-
-  const verifyOTP = async (otp) => {
-    try {
-      if (!otpData) {
-        return { success: false, message: 'No OTP session found' }
-      }
-
-      const response = await mockApiCall('/auth/verify-otp', {
-        email: otpData.email,
-        userId: otpData.userId,
-        otp
-      })
-
-      if (response.success) {
-        const { token, user: userData } = response.data
-        localStorage.setItem('authToken', token)
-        localStorage.setItem('userData', JSON.stringify(userData))
-        setUser(userData)
-        setOtpData(null)
-        return { success: true }
-      }
-      return { success: false, message: response.message }
-    } catch (error) {
-      return { success: false, message: 'OTP verification failed. Please try again.' }
-    }
-  }
-
-  const logout = () => {
-    localStorage.removeItem('authToken')
-    localStorage.removeItem('userData')
-    setUser(null)
-    setOtpData(null)
   }
 
   const value = {
     user,
+    userProfile,
     loading,
-    otpData,
-    login,
     signup,
-    forgotPassword,
-    resetPassword,
-    verifyOTP,
+    login,
     logout,
+    forgotPassword,
+    updateUserProfile,
     isAuthenticated: !!user
   }
 
@@ -156,68 +134,4 @@ export const AuthProvider = ({ children }) => {
       {children}
     </AuthContext.Provider>
   )
-}
-
-// Mock API function - replace with actual API calls
-const mockApiCall = async (endpoint, data) => {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      switch (endpoint) {
-        case '/auth/login':
-          if (data.email === 'user@example.com' && data.password === 'password') {
-            resolve({
-              success: true,
-              data: {
-                token: 'mock-jwt-token-' + Date.now(),
-                user: { id: 1, email: data.email, name: 'John Doe' }
-              }
-            })
-          } else {
-            resolve({ success: false, message: 'Invalid credentials' })
-          }
-          break
-        case '/auth/signup':
-          resolve({
-            success: true,
-            data: { userId: Math.random().toString(36).substr(2, 9) }
-          })
-          break
-        case '/auth/forgot-password':
-          // Check if email exists (in real app, check against database)
-          resolve({
-            success: true,
-            data: { userId: Math.random().toString(36).substr(2, 9) }
-          })
-          break
-        case '/auth/reset-password':
-          resolve({
-            success: true,
-            message: 'Password reset successful'
-          })
-          break
-        case '/auth/verify-otp':
-          if (data.otp === '123456') {
-            if (data.type === 'password-reset') {
-              resolve({
-                success: true,
-                data: { verified: true }
-              })
-            } else {
-              resolve({
-                success: true,
-                data: {
-                  token: 'mock-jwt-token-' + Date.now(),
-                  user: { id: 2, email: data.email, name: 'New User' }
-                }
-              })
-            }
-          } else {
-            resolve({ success: false, message: 'Invalid OTP' })
-          }
-          break
-        default:
-          resolve({ success: false, message: 'Endpoint not found' })
-      }
-    }, 1000)
-  })
 }

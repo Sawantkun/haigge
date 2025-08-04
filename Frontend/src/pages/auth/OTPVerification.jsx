@@ -5,6 +5,7 @@ import { useAuth } from '../../hooks/useAuth'
 import Button from '../../components/ui/Button'
 import Input from '../../components/ui/Input'
 import AnimatedPage from '../../components/ui/AnimatedPage'
+import { HiShieldCheck, HiDevicePhoneMobile, HiEnvelope, HiLockClosed } from 'react-icons/hi2'
 
 const OTPVerification = () => {
   const [otp, setOtp] = useState(['', '', '', '', '', ''])
@@ -14,14 +15,16 @@ const OTPVerification = () => {
   const [showPasswordReset, setShowPasswordReset] = useState(false)
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
-  const { verifyOTP, otpData, resetPassword } = useAuth()
+  const { verifyOTP, otpData, resetPassword, resendOTP } = useAuth()
   const navigate = useNavigate()
 
   const isPasswordReset = otpData?.type === 'password-reset'
+  const isMobileVerification = otpData?.type === 'mobile-verification'
+  const isEmailVerification = otpData?.type === 'email-verification'
 
   useEffect(() => {
     if (!otpData) {
-      navigate('/signup')
+      navigate('/login')
       return
     }
 
@@ -70,6 +73,12 @@ const OTPVerification = () => {
     if (result.success) {
       if (isPasswordReset) {
         setShowPasswordReset(true)
+      } else if (isEmailVerification) {
+        navigate('/login', {
+          state: { message: 'Email verified successfully! Please sign in.' }
+        })
+      } else if (isMobileVerification) {
+        navigate('/dashboard')
       } else {
         navigate('/dashboard')
       }
@@ -110,9 +119,17 @@ const OTPVerification = () => {
     setLoading(false)
   }
 
-  const handleResendOTP = () => {
-    setResendCooldown(60)
-    // Implement resend OTP logic here
+  const handleResendOTP = async () => {
+    setLoading(true)
+    const result = await resendOTP()
+
+    if (result.success) {
+      setResendCooldown(60)
+      setError('')
+    } else {
+      setError(result.message)
+    }
+    setLoading(false)
   }
 
   const containerVariants = {
@@ -137,9 +154,24 @@ const OTPVerification = () => {
     visible: { opacity: 1, scale: 1 }
   }
 
+  const getPageTitle = () => {
+    if (isPasswordReset) return 'Reset Your Password'
+    if (isMobileVerification) return 'Verify Mobile Number'
+    if (isEmailVerification) return 'Verify Your Email'
+    return 'Verify OTP'
+  }
+
+  const getPageDescription = () => {
+    const contact = otpData?.email || otpData?.mobile
+    if (isPasswordReset) return `We've sent a verification code to ${contact}`
+    if (isMobileVerification) return `We've sent an OTP to ${contact}`
+    if (isEmailVerification) return `We've sent a verification code to ${contact}`
+    return `We've sent a verification code to ${contact}`
+  }
+
   if (showPasswordReset) {
     return (
-      <AnimatedPage className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
+      <AnimatedPage className="min-h-screen flex items-center justify-center bg-[#E4DCCF] px-4">
         <motion.div
           className="max-w-md w-full space-y-8"
           variants={containerVariants}
@@ -148,24 +180,24 @@ const OTPVerification = () => {
         >
           <motion.div className="text-center" variants={itemVariants}>
             <motion.div
-              className="mx-auto h-24 w-24 bg-green-100 rounded-full flex items-center justify-center mb-6"
+              className="mx-auto h-24 w-24 bg-white rounded-full flex items-center justify-center mb-6 shadow-lg"
               initial={{ scale: 0, rotate: -180 }}
               animate={{ scale: 1, rotate: 0 }}
               transition={{ type: "spring", stiffness: 260, damping: 20 }}
             >
-              <span className="text-green-600 text-3xl">✓</span>
+              <HiShieldCheck className="text-black text-3xl" />
             </motion.div>
-            <h2 className="text-3xl font-bold text-gray-900">Set New Password</h2>
-            <p className="mt-2 text-gray-600">
+            <h2 className="text-4xl font-extralight text-black tracking-wide leading-tight">Set New Password</h2>
+            <p className="mt-4 text-black/60 font-light text-lg leading-relaxed">
               Enter your new password below
             </p>
           </motion.div>
 
-          <motion.form onSubmit={handlePasswordReset} className="space-y-6" variants={itemVariants}>
+          <motion.form onSubmit={handlePasswordReset} className="space-y-6 bg-white p-8 rounded-2xl shadow-lg" variants={itemVariants}>
             <AnimatePresence>
               {error && (
                 <motion.div
-                  className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg text-center"
+                  className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-center"
                   initial={{ opacity: 0, scale: 0.95 }}
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0, scale: 0.95 }}
@@ -185,6 +217,8 @@ const OTPVerification = () => {
                   setNewPassword(e.target.value)
                   if (error) setError('')
                 }}
+                showPasswordToggle={true}
+                className="border-gray-200 focus:ring-black focus:border-black"
               />
 
               <Input
@@ -195,13 +229,15 @@ const OTPVerification = () => {
                   setConfirmPassword(e.target.value)
                   if (error) setError('')
                 }}
+                showPasswordToggle={true}
+                className="border-gray-200 focus:ring-black focus:border-black"
               />
             </motion.div>
 
             <motion.div variants={itemVariants}>
               <Button
                 type="submit"
-                className="w-full"
+                className="w-full bg-black hover:bg-gray-800 text-white py-4 text-lg font-medium"
                 loading={loading}
                 disabled={loading}
               >
@@ -215,7 +251,7 @@ const OTPVerification = () => {
   }
 
   return (
-    <AnimatedPage className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
+    <AnimatedPage className="min-h-screen flex items-center justify-center bg-[#E4DCCF] px-4">
       <motion.div
         className="max-w-md w-full space-y-8"
         variants={containerVariants}
@@ -224,29 +260,32 @@ const OTPVerification = () => {
       >
         <motion.div className="text-center" variants={itemVariants}>
           <motion.div
-            className="mx-auto h-24 w-24 bg-black rounded-full flex items-center justify-center mb-6"
+            className="mx-auto h-24 w-24 bg-white rounded-full flex items-center justify-center mb-6 shadow-lg"
             initial={{ scale: 0, rotate: -180 }}
             animate={{ scale: 1, rotate: 0 }}
             transition={{ type: "spring", stiffness: 260, damping: 20 }}
           >
-            <span className="text-white text-3xl">
-              {isPasswordReset ? '🔐' : '📧'}
-            </span>
+            {isPasswordReset ? (
+              <HiLockClosed className="text-black text-3xl" />
+            ) : isMobileVerification ? (
+              <HiDevicePhoneMobile className="text-black text-3xl" />
+            ) : (
+              <HiEnvelope className="text-black text-3xl" />
+            )}
           </motion.div>
-          <h2 className="text-3xl font-bold text-gray-900">
-            {isPasswordReset ? 'Reset Your Password' : 'Verify Your Email'}
+          <h2 className="text-4xl font-extralight text-black tracking-wide leading-tight">
+            {getPageTitle()}
           </h2>
-          <p className="mt-2 text-gray-600">
-            We've sent a verification code to{' '}
-            <span className="font-medium">{otpData?.email}</span>
+          <p className="mt-4 text-black/60 font-light text-lg leading-relaxed">
+            {getPageDescription()}
           </p>
         </motion.div>
 
-        <motion.form onSubmit={handleOTPSubmit} className="space-y-6" variants={itemVariants}>
+        <motion.form onSubmit={handleOTPSubmit} className="space-y-6 bg-white p-8 rounded-2xl shadow-lg" variants={itemVariants}>
           <AnimatePresence>
             {error && (
               <motion.div
-                className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg text-center"
+                className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-center"
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.95 }}
@@ -267,7 +306,7 @@ const OTPVerification = () => {
                 value={digit}
                 onChange={(e) => handleChange(index, e.target.value)}
                 onKeyDown={(e) => handleKeyDown(index, e)}
-                className="w-12 h-12 text-center text-xl font-bold border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent outline-none transition-all duration-200"
+                className="w-14 h-14 text-center text-xl font-bold border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-black focus:border-black outline-none transition-all duration-200"
                 variants={otpInputVariants}
                 initial="hidden"
                 animate="visible"
@@ -280,23 +319,23 @@ const OTPVerification = () => {
           <motion.div variants={itemVariants}>
             <Button
               type="submit"
-              className="w-full"
+              className="w-full bg-black hover:bg-gray-800 text-white py-4 text-lg font-medium"
               loading={loading}
               disabled={loading}
             >
-              {isPasswordReset ? 'Verify & Continue' : 'Verify Email'}
+              {isPasswordReset ? 'Verify & Continue' : 'Verify Code'}
             </Button>
           </motion.div>
 
-          <motion.div className="text-center" variants={itemVariants}>
-            <p className="text-gray-600">Didn't receive the code?</p>
+          <motion.div className="text-center pt-4 border-t border-gray-200" variants={itemVariants}>
+            <p className="text-gray-500 mb-3 font-light">Didn't receive the code?</p>
             {resendCooldown > 0 ? (
-              <p className="text-gray-500">Resend in {resendCooldown}s</p>
+              <p className="text-gray-400 font-light">Resend in {resendCooldown}s</p>
             ) : (
               <button
                 type="button"
                 onClick={handleResendOTP}
-                className="text-black hover:underline font-medium"
+                className="text-black hover:text-gray-700 font-medium transition-colors tracking-wide"
               >
                 Resend Code
               </button>
@@ -307,7 +346,7 @@ const OTPVerification = () => {
         <motion.div className="text-center" variants={itemVariants}>
           <button
             onClick={() => navigate(isPasswordReset ? '/forgot-password' : '/signup')}
-            className="text-gray-600 hover:text-gray-800"
+            className="text-black/60 hover:text-black transition-colors font-light tracking-wide"
           >
             ← Back to {isPasswordReset ? 'Forgot Password' : 'Sign Up'}
           </button>

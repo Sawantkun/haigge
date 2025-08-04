@@ -1,187 +1,135 @@
-import React from 'react'
-import { Link } from 'react-router-dom'
-import { motion } from 'framer-motion'
-import Button from '../ui/Button'
-import { MdKeyboardArrowDown } from "react-icons/md";
+import React, { useState, useEffect } from 'react'
 
-const HeroSection = () => {
-  const heroVariants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: {
-        duration: 1.2,
-        staggerChildren: 0.2
-      }
-    }
-  }
+const HeroSection = ({ productImages = [] }) => {
+  const [isVisible, setIsVisible] = useState(false)
 
-  const itemVariants = {
-    hidden: { opacity: 0, y: 40 },
-    visible: {
-      opacity: 1,
-      y: 0,
-      transition: { duration: 0.8, ease: [0.25, 0.46, 0.45, 0.94] }
-    }
-  }
+  const heroImage = "https://images.unsplash.com/photo-1441986300917-64674bd600d8?fit=crop&crop=center&w=800&h=1000&q=80"
 
-  const handleScrollDown = () => {
-    window.scrollTo({
-      top: window.innerHeight,
-      behavior: 'smooth'
-    })
-  }
+  useEffect(() => {
+    setIsVisible(true)
+  }, [])
 
   return (
-    <motion.section
-      className="relative min-h-screen flex items-center pt-16" // Add pt-16 for header space
-      variants={heroVariants}
-      initial="hidden"
-      animate="visible"
-    >
-      {/* Background Image */}
-      <div className="absolute inset-0">
-        <motion.div
-          className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-          style={{
-            backgroundImage: `url('https://images.pexels.com/photos/3965545/pexels-photo-3965545.jpeg?auto=compress&cs=tinysrgb&w=1920&h=1080&dpr=2')`
-          }}
-          initial={{ scale: 1.1 }}
-          animate={{ scale: 1 }}
-          transition={{ duration: 1.5, ease: "easeOut" }}
-        />
-        <div className="absolute inset-0 bg-black/70" />
+    <section className="min-h-screen bg-gradient-to-br from-stone-50 via-gray-50 to-stone-100 relative overflow-hidden">
+      {/* Subtle background pattern */}
+      <div className="absolute inset-0 opacity-[0.03]">
+        <div className="absolute top-0 left-0 w-full h-full"
+             style={{
+               backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23000000' fill-opacity='0.1'%3E%3Ccircle cx='30' cy='30' r='1'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
+               backgroundSize: '60px 60px'
+             }}>
+        </div>
       </div>
 
-      {/* Content Container */}
-      <div className="relative z-10 max-w-7xl mx-auto px-6 lg:px-8 w-full ">
-        <div className="max-w-2xl ">
-          {/* Main Heading */}
-          <motion.h1
-            className="text-6xl lg:text-8xl font-light text-white mb-8 leading-none tracking-tight"
-            variants={itemVariants}
-          >
-            FIND CLOTHES<br />
-            <span className="font-normal">THAT MATCHES</span><br />
-            <span className="font-bold">YOUR STYLE</span>
-          </motion.h1>
+      <div className="relative z-10 max-w-[90vw] mx-auto px-8 py-16">
+        <div className="grid lg:grid-cols-2 gap-20 items-center min-h-[85vh]">
+          {/* Left Content */}
+          <div className={`transform transition-all duration-1000 ${isVisible ? 'translate-x-0 opacity-100' : '-translate-x-20 opacity-0'}`}>
+            <div className="inline-flex items-center bg-black/5 rounded-full px-6 py-3 mb-10 border border-black/10">
+              <span className="w-2 h-2 bg-black rounded-full mr-3"></span>
+              <span className="text-black/70 text-sm font-medium tracking-wide">EXCLUSIVE COLLECTION</span>
+            </div>
 
-          {/* Description */}
-          <motion.p
-            className="text-lg text-white/80 mb-12 leading-relaxed max-w-lg font-light"
-            variants={itemVariants}
-          >
-            Browse through our diverse range of meticulously crafted garments, designed to bring out your individuality.
-          </motion.p>
+            <h1 className="text-6xl lg:text-7xl font-black text-black mb-8 leading-[0.85] tracking-tight">
+              <span className="block">FIND CLOTHES</span>
+              <span className="block">THAT MATCHES</span>
+              <span className="block text-black/60">YOUR STYLE</span>
+            </h1>
 
-          {/* CTA Button */}
-          <motion.div
-            variants={itemVariants}
-            className="mb-20"
-          >
-            <Link to="/signup">
-              <motion.div
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                className="inline-block"
-              >
-                <Button
-                  size="lg"
-                  className="border !border-white !bg-transparent !rounded-lg transition hover:!text-black  hover:!bg-gray-100 px-12 py-4 text-base font-medium rounded-none"
-                >
-                  Shop Now
-                </Button>
-              </motion.div>
-            </Link>
-          </motion.div>
+            <p className="text-xl text-black/60 mb-12 leading-relaxed max-w-lg font-light">
+              Browse through our diverse range of meticulously crafted garments,
+              designed to bring out your individuality and cater to your refined sense of style.
+            </p>
 
-          {/* Stats */}
-          <motion.div
-            className="flex gap-16"
-            variants={itemVariants}
-          >
-            {[
-              { number: '200+', label: 'Brands' },
-              { number: '2,000+', label: 'Products' },
-              { number: '30,000+', label: 'Customers' }
-            ].map((stat, index) => (
-              <motion.div
-                key={stat.label}
-                className="text-white"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 1.5 + index * 0.1, duration: 0.6 }}
-              >
-                <motion.div
-                  className="text-2xl font-bold mb-1"
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
-                  transition={{
-                    delay: 1.8 + index * 0.1,
-                    duration: 0.5,
-                    type: "spring",
-                    stiffness: 200
-                  }}
-                >
-                  {stat.number}
-                </motion.div>
-                <div className="text-xs text-white/60 uppercase tracking-widest font-light">
-                  {stat.label}
+            <div className="flex flex-col sm:flex-row gap-6 mb-10">
+              <button className="group relative bg-black text-white px-12 py-4 text-lg font-medium transition-all duration-300 hover:bg-black/90 hover:scale-[1.02] hover:shadow-xl overflow-hidden">
+                <span className="relative z-10">Shop Now</span>
+                <div className="absolute inset-0 bg-gradient-to-r from-black/80 to-black transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left"></div>
+              </button>
+              <button className="group border-2 border-black/20 text-black px-12 py-4 text-lg font-medium hover:border-black/40 hover:bg-black/5 transition-all duration-300">
+                <span className="flex items-center">
+                  View Catalog
+                  <svg className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 8l4 4m0 0l-4 4m4-4H3"></path>
+                  </svg>
+                </span>
+              </button>
+            </div>
+
+            {/* Elegant Stats */}
+            <div className="grid grid-cols-3 gap-12 pt-4 border-t border-black/10">
+              {[
+                { number: '200+', label: 'International Brands' },
+                { number: '2,000+', label: 'High-Quality Products' },
+                { number: '30,000+', label: 'Happy Customers' }
+              ].map((stat, index) => (
+                <div key={index} className={`transform transition-all duration-700 delay-${index * 200} ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'}`}>
+                  <div className="text-3xl font-black text-black mb-2 tracking-tight">
+                    {stat.number}
+                  </div>
+                  <p className="text-black/50 text-sm font-medium tracking-wide uppercase">
+                    {stat.label}
+                  </p>
                 </div>
-              </motion.div>
-            ))}
-          </motion.div>
+              ))}
+            </div>
+          </div>
+
+          {/* Right Content - Elegant Image Section */}
+          <div className={`relative transform transition-all duration-1000 delay-300 ${isVisible ? 'translate-x-0 opacity-100' : 'translate-x-20 opacity-0'}`}>
+            <div className="relative h-[650px] w-full">
+              {/* Main image container */}
+              <div className="absolute inset-0 bg-white rounded-lg overflow-hidden shadow-2xl shadow-black/10 border border-black/5">
+                <img
+                  src={heroImage}
+                  alt="Fashion Collection"
+                  className="w-full h-full object-cover"
+                  onError={(e) => {
+                    e.target.style.display = 'none';
+                    e.target.nextSibling.style.display = 'flex';
+                  }}
+                />
+                <div className="w-full h-full bg-stone-100 flex items-center justify-center" style={{display: 'none'}}>
+                  <span className="text-black/40 text-2xl font-light">Fashion Collection</span>
+                </div>
+              </div>
+
+              {/* Elegant floating elements */}
+              <div className="absolute -top-4 -right-4 w-16 h-16 bg-black rounded-full flex items-center justify-center shadow-lg hover:scale-110 transition-transform duration-300">
+                <svg viewBox="0 0 24 24" fill="white" className="w-8 h-8">
+                  <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                </svg>
+              </div>
+
+              <div className="absolute -bottom-4 -left-4 w-12 h-12 bg-stone-200 border-4 border-white rounded-full shadow-lg"></div>
+
+            </div>
+
+            {/* Elegant floating info card */}
+            <div className="absolute top-12 -left-12 bg-white/90 backdrop-blur-sm rounded-lg p-6 shadow-xl border border-black/10">
+              <div className="flex items-center">
+                <div className="w-12 h-12 bg-black rounded-full flex items-center justify-center mr-4">
+                  <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"></path>
+                  </svg>
+                </div>
+                <div>
+                  <p className="text-black font-semibold text-sm">Premium Quality</p>
+                  <p className="text-black/60 text-xs tracking-wide">Verified & Authentic</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Subtle accent elements */}
+            <div className="absolute top-1/2 -right-8 w-1 h-24 bg-black/20 rounded-full"></div>
+            <div className="absolute bottom-1/4 -left-8 w-1 h-16 bg-black/20 rounded-full"></div>
+          </div>
         </div>
       </div>
 
-      {/* Right Side Accent */}
-      <motion.div
-        className="absolute right-8 top-1/2 transform -translate-y-1/2 hidden lg:block"
-        initial={{ opacity: 0, x: 50 }}
-        animate={{ opacity: 1, x: 0 }}
-        transition={{ delay: 1.2, duration: 1 }}
-      >
-        <div className="text-right text-white">
-          <motion.div
-            className="text-xs uppercase tracking-[0.3em] mb-2 opacity-60"
-            animate={{ opacity: [0.3, 1, 0.3] }}
-            transition={{ duration: 3, repeat: Infinity }}
-          >
-            Luxury
-          </motion.div>
-          <div className="w-px h-20 bg-white/30 ml-auto"></div>
-          <motion.div
-            className="text-xs uppercase tracking-[0.3em] mt-2 opacity-60"
-            animate={{ opacity: [0.3, 1, 0.3] }}
-            transition={{ duration: 3, repeat: Infinity, delay: 1.5 }}
-          >
-            Fashion
-          </motion.div>
-        </div>
-      </motion.div>
-
-      {/* Enhanced Scroll Indicator */}
-      <motion.div
-        className="absolute bottom-8 left-1/2 transform -translate-x-1/2 cursor-pointer group"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 2.5, duration: 1 }}
-        onClick={handleScrollDown}
-      >
-
-
-
-
-          {/* Arrow */}
-          <motion.div
-            className="text-white/60 text-lg mt-1 text-[3rem] group-hover:text-white/80 transition-colors border p-4 rounded-full"
-            animate={{ y: [0, 5, 0] }}
-            transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
-          >
-            <MdKeyboardArrowDown />
-          </motion.div>
-        </motion.div>
-    </motion.section>
+      {/* Minimalist bottom accent */}
+      <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-black/20 to-transparent"></div>
+    </section>
   )
 }
 
